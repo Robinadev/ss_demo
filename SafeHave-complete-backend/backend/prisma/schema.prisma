@@ -1,0 +1,439 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // For migrations: use non-pooling URL
+  // directUrl  = env("POSTGRES_URL_NON_POOLING")
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  password String?
+  firstName String?
+  lastName String?
+  phone String?
+  role UserRole @default(SURVIVOR)
+  status UserStatus @default(ACTIVE)
+  language String @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  reports Report[]
+  caseComments CaseComment[]
+  forumPosts ForumPost[]
+  supportRequests SupportRequest[]
+
+  @@index([email])
+  @@index([role])
+}
+
+enum UserRole {
+  SURVIVOR
+  COUNSELOR
+  MEDICAL_PROFESSIONAL
+  LEGAL_ADVISOR
+  ADMIN
+  MODERATOR
+  SYSTEM
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model Report {
+  id String @id @default(cuid())
+  reporterId String?
+  title String
+  description String @db.Text
+  category IncidentCategory
+  severity SeverityLevel
+  status ReportStatus @default(PENDING_REVIEW)
+  isAnonymous Boolean @default(true)
+  language String @default("en")
+  
+  // ML Classification
+  classificationScore Float?
+  classificationLabel String?
+  suggestedCaseType String?
+  suggestedPriority String?
+  
+  // Location & IP Risk
+  location String?
+  ipAddress String? @db.VarChar(255)
+  ipHash String? @unique
+  deviceFingerprint String? @db.VarChar(255)
+  
+  // Fraud Detection
+  riskScore Float @default(0)
+  flaggedAsRepetitive Boolean @default(false)
+  isDuplicate Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resolvedAt DateTime?
+
+  // Relations
+  reporter User? @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  evidences Evidence[]
+  caseAssignment CaseAssignment?
+  caseComments CaseComment[]
+  auditLogs AuditLog[]
+
+  @@index([status])
+  @@index([category])
+  @@index([severity])
+  @@index([riskScore])
+  @@index([ipHash])
+  @@index([createdAt])
+}
+
+enum IncidentCategory {
+  PHYSICAL_VIOLENCE
+  SEXUAL_ASSAULT
+  EMOTIONAL_ABUSE
+  PSYCHOLOGICAL_ABUSE
+  NEGLECT
+  CYBERBULLYING
+  HARASSMENT
+  DISCRIMINATION
+  WORKPLACE_ABUSE
+  DOMESTIC_VIOLENCE
+  CHILD_ABUSE
+  ELDER_ABUSE
+  OTHER
+}
+
+enum SeverityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ReportStatus {
+  PENDING_REVIEW
+  UNDER_INVESTIGATION
+  ASSIGNED_TO_PROFESSIONAL
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REJECTED
+  ARCHIVED
+}
+
+model Evidence {
+  id String @id @default(cuid())
+  reportId String
+  fileUrl String
+  fileName String
+  fileType String
+  fileSize Int
+  description String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+model CaseAssignment {
+  id String @id @default(cuid())
+  reportId String @unique
+  assignedToId String
+  assignedById String?
+  caseType CaseType
+  priority CasePriority @default(MEDIUM)
+  dueDate DateTime?
+  notes String? @db.Text
+  status AssignmentStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  completedAt DateTime?
+
+  // Relations
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  assignedTo ServiceProvider @relation("primaryAssignee", fields: [assignedToId], references: [id])
+  supportProviders ServiceProvider[] @relation("supportProviders")
+  feedbacks CaseFeedback[]
+
+  @@index([reportId])
+  @@index([assignedToId])
+  @@index([caseType])
+  @@index([priority])
+  @@index([status])
+}
+
+enum CaseType {
+  COUNSELING
+  MEDICAL_SUPPORT
+  LEGAL_ASSISTANCE
+  EMERGENCY_SUPPORT
+  PREVENTION_EDUCATION
+  RESOURCE_REFERRAL
+  COMBINED_SUPPORT
+}
+
+enum CasePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model CaseComment {
+  id String @id @default(cuid())
+  reportId String
+  authorId String
+  content String @db.Text
+  isPublic Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([reportId])
+  @@index([authorId])
+}
+
+model ServiceProvider {
+  id String @id @default(cuid())
+  name String
+  type ServiceProviderType
+  email String?
+  phone String?
+  address String? @db.Text
+  city String?
+  country String?
+  description String? @db.Text
+  website String?
+  isVerified Boolean @default(false)
+  rating Float? @default(0)
+  availability String?
+  languages String[] @default(["en"])
+  specializations String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  assignedCases CaseAssignment[] @relation("primaryAssignee")
+  supportCases CaseAssignment[] @relation("supportProviders")
+  supportRequests SupportRequest[]
+  reviews ServiceProviderReview[]
+
+  @@index([type])
+  @@index([isVerified])
+}
+
+enum ServiceProviderType {
+  COUNSELOR
+  MEDICAL_PROFESSIONAL
+  LEGAL_ADVISOR
+  NGO
+  GOVERNMENT_AGENCY
+  COMMUNITY_CENTER
+  SHELTER
+  HOTLINE
+}
+
+model ServiceProviderReview {
+  id String @id @default(cuid())
+  serviceProviderId String
+  rating Int @default(5)
+  feedback String? @db.Text
+  createdAt DateTime @default(now())
+
+  // Relations
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceProviderId])
+}
+
+model SupportRequest {
+  id String @id @default(cuid())
+  userId String
+  serviceProviderId String
+  description String @db.Text
+  status RequestStatus @default(PENDING)
+  requestedAt DateTime @default(now())
+  respondedAt DateTime?
+  resolvedAt DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+
+  @@index([userId])
+  @@index([serviceProviderId])
+  @@index([status])
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+model CaseFeedback {
+  id String @id @default(cuid())
+  caseAssignmentId String
+  rating Int
+  feedback String? @db.Text
+  createdAt DateTime @default(now())
+
+  // Relations
+  caseAssignment CaseAssignment @relation(fields: [caseAssignmentId], references: [id], onDelete: Cascade)
+
+  @@index([caseAssignmentId])
+}
+
+model ForumPost {
+  id String @id @default(cuid())
+  authorId String
+  title String
+  content String @db.Text
+  category ForumCategory
+  status ForumPostStatus @default(PENDING_MODERATION)
+  views Int @default(0)
+  likes Int @default(0)
+  isAnonymous Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  author User @relation(fields: [authorId], references: [id])
+  comments ForumComment[]
+
+  @@index([authorId])
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ForumCategory {
+  PEER_SUPPORT
+  STORYTELLING
+  QUESTIONS_ANSWERS
+  RESOURCES
+  ANNOUNCEMENTS
+  AWARENESS
+}
+
+enum ForumPostStatus {
+  PENDING_MODERATION
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
+model ForumComment {
+  id String @id @default(cuid())
+  postId String
+  content String @db.Text
+  likes Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  post ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+model MissingPerson {
+  id String @id @default(cuid())
+  firstName String
+  lastName String
+  age Int?
+  description String? @db.Text
+  photoUrl String?
+  lastSeenLocation String
+  lastSeenDate DateTime
+  status MissingPersonStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resolvedAt DateTime?
+
+  @@index([status])
+  @@index([lastSeenDate])
+}
+
+enum MissingPersonStatus {
+  ACTIVE
+  FOUND
+  CLOSED
+}
+
+model AnalyticsSnapshot {
+  id String @id @default(cuid())
+  date DateTime @default(now())
+  totalReports Int @default(0)
+  reportsByCategory String @db.Text // JSON
+  reportsBySeverity String @db.Text // JSON
+  resolutionRate Float @default(0)
+  averageResolutionTime Int @default(0)
+  anonymousReportCount Int @default(0)
+  publicReportCount Int @default(0)
+  casesByType String @db.Text // JSON
+  uniqueReporters Int @default(0)
+
+  @@unique([date])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+  action String
+  entityType String
+  entityId String
+  changes String @db.Text // JSON
+  userId String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  report Report? @relation(fields: [entityId], references: [id], onDelete: SetNull)
+
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+model MLTrainingData {
+  id String @id @default(cuid())
+  category IncidentCategory
+  text String @db.Text
+  severity SeverityLevel
+  frequency Int @default(1)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@index([isActive])
+}

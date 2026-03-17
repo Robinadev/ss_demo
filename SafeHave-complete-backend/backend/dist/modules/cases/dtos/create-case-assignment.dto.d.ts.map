@@ -1,0 +1,1 @@
+{"version":3,"file":"create-case-assignment.dto.d.ts","sourceRoot":"","sources":["../../../../src/modules/cases/dtos/create-case-assignment.dto.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,gBAAgB,CAAC;AAExD,qBAAa,uBAAuB;IAKlC,YAAY,EAAG,MAAM,CAAC;IAOtB,QAAQ,EAAG,QAAQ,CAAC;IASpB,QAAQ,CAAC,EAAE,YAAY,CAAC;IAQxB,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB"}
