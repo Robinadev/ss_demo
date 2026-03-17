@@ -1,0 +1,252 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ===== Core User Management =====
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  phoneNumber       String?
+  profileImage      String?
+  roleId            String
+  role              Role          @relation(fields: [roleId], references: [id])
+  isEmailVerified   Boolean       @default(false)
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  refreshTokens     RefreshToken[]
+  reports           Report[]
+  comments          Comment[]
+  notifications     Notification[]
+  caseAssignments   CaseAssignment[]
+  
+  @@index([email])
+  @@index([roleId])
+}
+
+model Role {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  permissions Json      @default("[]")
+  users       User[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ===== Reporting System =====
+model Report {
+  id                String       @id @default(cuid())
+  reporterId        String
+  reporter          User         @relation(fields: [reporterId], references: [id])
+  title             String
+  description       String
+  incidentDate      DateTime
+  incidentLocation  String
+  severity          String       // LOW, MEDIUM, HIGH, CRITICAL
+  reportType        String       // BULLYING, HARASSMENT, VIOLENCE, ABUSE, OTHER
+  status            String       @default("SUBMITTED") // SUBMITTED, REVIEWED, IN_INVESTIGATION, RESOLVED, CLOSED
+  
+  // Classification Results
+  mlClassification  Json?
+  classificationConfidence Float?
+  
+  // Evidence
+  attachments       Attachment[]
+  
+  // Case Management
+  caseId            String?
+  case              Case?        @relation(fields: [caseId], references: [id])
+  
+  // Tracking
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  // Relations
+  comments          Comment[]
+  notifications     Notification[]
+  
+  @@index([reporterId])
+  @@index([status])
+  @@index([reportType])
+  @@index([severity])
+  @@index([caseId])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  fileUrl   String
+  fileName  String
+  fileType  String
+  fileSize  Int
+  uploadedAt DateTime @default(now())
+  
+  @@index([reportId])
+}
+
+// ===== Case Management =====
+model Case {
+  id                String          @id @default(cuid())
+  caseNumber        String          @unique
+  title             String
+  description       String
+  status            String          @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED, ARCHIVED
+  priority          String          @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  
+  // Case Details
+  assignedTo        CaseAssignment[]
+  
+  // Reports linked to this case
+  reports           Report[]
+  
+  // Timeline
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  resolvedAt        DateTime?
+  
+  // Audit
+  notes             CaseNote[]
+  
+  @@index([status])
+  @@index([priority])
+}
+
+model CaseAssignment {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String   // INVESTIGATOR, COUNSELOR, DOCTOR, LAWYER, MODERATOR
+  assignedAt DateTime @default(now())
+  
+  @@unique([caseId, userId])
+  @@index([caseId])
+  @@index([userId])
+}
+
+model CaseNote {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  content   String
+  author    String   // Name or ID of the person who wrote the note
+  createdAt DateTime @default(now())
+  
+  @@index([caseId])
+}
+
+// ===== Comments System =====
+model Comment {
+  id        String   @id @default(cuid())
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([reportId])
+  @@index([userId])
+}
+
+// ===== Notifications =====
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportId  String?
+  report    Report?  @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  type      String   // REPORT_SUBMITTED, CASE_ASSIGNED, STATUS_UPDATED, COMMENT_ADDED, etc.
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ===== Service Providers =====
+model ServiceProvider {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   // COUNSELOR, DOCTOR, LAWYER, HOTLINE, SHELTER, OTHER
+  email         String?
+  phoneNumber   String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?
+  website       String?
+  description   String?
+  availability  String?
+  ratings       Float?
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([type])
+  @@index([city])
+}
+
+// ===== ML Training Data =====
+model MLTrainingData {
+  id                String   @id @default(cuid())
+  text              String
+  category          String   // The actual category this text belongs to
+  confidence        Float?
+  language          String   @default("en")
+  source            String?  // Where this training data came from
+  isValidated       Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([category])
+}
+
+// ===== Analytics =====
+model Analytics {
+  id                      String   @id @default(cuid())
+  date                    DateTime
+  totalReports            Int      @default(0)
+  reportsByType           Json     @default("{}")
+  reportsBySeverity       Json     @default("{}")
+  reportsByStatus         Json     @default("{}")
+  averageResolutionTime   Float?
+  totalUsers              Int      @default(0)
+  usersByRole             Json     @default("{}")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  
+  @@unique([date])
+}
