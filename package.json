@@ -8,34 +8,31 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev": "npm run dev:backend &",
     "build": "npm run build -w backend && npm run build -w frontend",
     "start": "npm run start:prod -w backend",
-    "test": "npm run test -w backend && npm run test -w frontend",
-    "lint": "npm run lint -w backend && npm run lint -w frontend",
-    "format": "npm run format -w backend && npm run format -w frontend",
+    "test": "npm run test -w backend",
+    "lint": "npm run lint -w backend",
+    "format": "npm run format -w backend",
     "db:setup": "npm run db:setup -w backend",
     "db:reset": "npm run db:reset -w backend",
-    "db:seed": "npm run prisma:seed -w backend"
+    "db:seed": "npm run prisma:seed -w backend",
+    "install:all": "npm install && npm install -w backend && npm install -w frontend",
+    "setup": "npm run install:all && npm run db:setup",
+    "clean": "rimraf node_modules backend/node_modules frontend/node_modules dist backend/dist frontend/dist"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "rimraf": "^6.0.1"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.17",
-    "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.1.17",
-    "@nestjs/jwt": "^11.0.2",
-    "@nestjs/passport": "^11.0.5",
     "@nestjs/swagger": "^11.2.6",
-    "@prisma/client": "^7.5.0",
-    "axios": "^1.13.6",
-    "bcryptjs": "^3.0.3",
-    "class-validator": "^0.15.1",
-    "express": "^5.2.1",
-    "passport-jwt": "^4.0.1",
+    "@vitejs/plugin-react": "^6.0.1",
     "react": "^19.2.4",
-    "react-router-dom": "^7.13.1",
-    "rxjs": "^7.8.2"
+    "react-dom": "^19.2.4",
+    "vite": "^8.0.0"
   }
 }
