@@ -3,6 +3,27 @@ import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
+// Suppress xdg-open errors from child processes and other spawn errors
+process.on('uncaughtException', (error: any) => {
+  if (error?.code === 'ENOENT' && error?.syscall?.includes('xdg-open')) {
+    // Silently ignore xdg-open errors (browser opening in non-GUI environments)
+    return;
+  }
+  if (error?.message?.includes('spawn xdg-open')) {
+    // Silently ignore spawn xdg-open errors
+    return;
+  }
+  throw error;
+});
+
+// Also handle unhandled rejections
+process.on('unhandledRejection', (reason: any) => {
+  if (reason?.code === 'ENOENT' && reason?.syscall?.includes('xdg-open')) {
+    return;
+  }
+  throw reason;
+});
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
