@@ -4,24 +4,24 @@
   "description": "SafeHaven - Violence, Abuse, and Bullying Digital Reporting Platform",
   "private": true,
   "workspaces": [
-    "backend",
-    "frontend"
+    "complete/SafeHave-complete-backend/backend",
+    "complete/SafeHave-complete-backend/frontend"
   ],
   "scripts": {
-    "dev:backend": "npm run dev -w backend",
-    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run start:dev -w complete/SafeHave-complete-backend/backend",
+    "dev:frontend": "npm run dev -w complete/SafeHave-complete-backend/frontend",
     "dev": "npm run dev:backend &",
-    "build": "npm run build -w backend && npm run build -w frontend",
-    "start": "npm run start:prod -w backend",
-    "test": "npm run test -w backend",
-    "lint": "npm run lint -w backend",
-    "format": "npm run format -w backend",
-    "db:setup": "npm run db:setup -w backend",
-    "db:reset": "npm run db:reset -w backend",
-    "db:seed": "npm run prisma:seed -w backend",
-    "install:all": "npm install && npm install -w backend && npm install -w frontend",
+    "build": "npm run build -w complete/SafeHave-complete-backend/backend && npm run build -w complete/SafeHave-complete-backend/frontend",
+    "start": "npm run start:prod -w complete/SafeHave-complete-backend/backend",
+    "test": "npm run test -w complete/SafeHave-complete-backend/backend",
+    "lint": "npm run lint -w complete/SafeHave-complete-backend/backend",
+    "format": "npm run format -w complete/SafeHave-complete-backend/backend",
+    "db:setup": "npm run db:setup -w complete/SafeHave-complete-backend/backend",
+    "db:reset": "npm run db:reset -w complete/SafeHave-complete-backend/backend",
+    "db:seed": "npm run prisma:seed -w complete/SafeHave-complete-backend/backend",
+    "install:all": "npm install && npm install -w complete/SafeHave-complete-backend/backend && npm install -w complete/SafeHave-complete-backend/frontend",
     "setup": "npm run install:all && npm run db:setup",
-    "clean": "rimraf node_modules backend/node_modules frontend/node_modules dist backend/dist frontend/dist"
+    "clean": "rimraf node_modules complete/SafeHave-complete-backend/backend/node_modules complete/SafeHave-complete-backend/frontend/node_modules complete/SafeHave-complete-backend/backend/dist complete/SafeHave-complete-backend/frontend/dist"
   },
   "devDependencies": {
     "rimraf": "^6.0.1"

@@ -1,0 +1,3 @@
+packages:
+  - 'complete/SafeHave-complete-backend/backend'
+  - 'complete/SafeHave-complete-backend/frontend'
