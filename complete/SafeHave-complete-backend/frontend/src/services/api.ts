@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -92,6 +92,28 @@ export const analyticsAPI = {
   getDashboard: () => apiClient.get('/analytics/dashboard'),
   getReports: () => apiClient.get('/analytics/reports'),
   getCases: () => apiClient.get('/analytics/cases'),
+};
+
+export const professionalsAPI = {
+  getAll: (params?: any) => apiClient.get('/professionals', { params }),
+  getById: (id: string) => apiClient.get(`/professionals/${id}`),
+  update: (id: string, data: any) => apiClient.put(`/professionals/${id}`, data),
+};
+
+export const forumAPI = {
+  getPosts: (params?: any) => apiClient.get('/forum/posts', { params }),
+  createPost: (data: any) => apiClient.post('/forum/posts', data),
+  getById: (id: string) => apiClient.get(`/forum/posts/${id}`),
+  addComment: (postId: string, content: string) =>
+    apiClient.post(`/forum/posts/${postId}/comments`, { content }),
+};
+
+export const supportAPI = {
+  createTicket: (data: any) => apiClient.post('/support/tickets', data),
+  getTickets: (params?: any) => apiClient.get('/support/tickets', { params }),
+  getById: (id: string) => apiClient.get(`/support/tickets/${id}`),
+  addReply: (id: string, message: string) =>
+    apiClient.post(`/support/tickets/${id}/replies`, { message }),
 };
 
 export default apiClient;
