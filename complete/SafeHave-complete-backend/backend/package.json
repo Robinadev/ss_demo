@@ -24,7 +24,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "db:setup": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed",
+    "db:init": "ts-node scripts/init-db.ts",
+    "db:setup": "npm run prisma:generate && npm run prisma:deploy && npm run db:init",
     "db:reset": "prisma migrate reset --force",
     "db:push": "prisma db push"
   },
